@@ -3,11 +3,18 @@ import axios from 'axios'
 
 const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY
 
-const SearchBar = ({ onLocationSearch, onCurrentLocation, loading }) => {
+const SearchBar = ({ onLocationSearch, onCurrentLocation, loading, currentLocation }) => {
   const [search, setSearch] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [fetching, setFetching] = useState(false)
+
+  // Update search input when currentLocation changes
+  React.useEffect(() => {
+    if (currentLocation) {
+      setSearch(currentLocation)
+    }
+  }, [currentLocation])
 
   const fetchSuggestions = async (query) => {
     if (!query) {
@@ -52,17 +59,51 @@ const SearchBar = ({ onLocationSearch, onCurrentLocation, loading }) => {
     }
   }
 
+  const handleClear = () => {
+    setSearch('')
+    setSuggestions([])
+    setShowSuggestions(false)
+  }
+
+  const handleCurrentLocationClick = async () => {
+    await onCurrentLocation()
+  }
+
   return (
     <form onSubmit={handleSubmit} className="relative flex items-center gap-2 mb-8">
-      <input
-        type="text"
-        className="flex-1 p-4 rounded-xl bg-white/30 text-rgba(60, 0, 80, 0.18) placeholder-rgba(60, 0, 80, 0.18)/70 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-300"
-        placeholder="Search for a city..."
-        value={search}
-        onChange={handleInputChange}
-        onFocus={() => setShowSuggestions(search.length > 0)}
-        autoComplete="off"
-      />
+      <div className="relative flex-1">
+        <input
+          type="text"
+          className="w-full p-4 pr-12 rounded-xl bg-white/30 text-rgba(60, 0, 80, 0.18) placeholder-rgba(60, 0, 80, 0.18)/70 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-300"
+          placeholder="Search for a city..."
+          value={search}
+          onChange={handleInputChange}
+          onFocus={() => setShowSuggestions(search.length > 0)}
+          autoComplete="off"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-white/20 rounded-full transition-all duration-200"
+            disabled={loading}
+          >
+            <svg 
+              className="w-5 h-5 text-rgba(60, 0, 80, 0.18)" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M6 18L18 6M6 6l12 12" 
+              />
+            </svg>
+          </button>
+        )}
+      </div>
       <button
         type="submit"
         className="px-6 py-3 bg-white/30 hover:bg-white/40 border border-white/30 rounded-xl text-rgba(60, 0, 80, 0.18) font-medium transition-all duration-300"
@@ -73,7 +114,7 @@ const SearchBar = ({ onLocationSearch, onCurrentLocation, loading }) => {
       <button
         type="button"
         className="p-3 bg-white/30 hover:bg-white/40 border border-white/30 rounded-xl text-rgba(60, 0, 80, 0.18) font-medium transition-all duration-300"
-        onClick={onCurrentLocation}
+        onClick={handleCurrentLocationClick}
         disabled={loading}
       >
         <span role="img" aria-label="location">📍</span>

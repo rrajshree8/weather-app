@@ -17,6 +17,7 @@ function App() {
   const [weeklyData, setWeeklyData] = useState([])
   const [alerts, setAlerts] = useState(mockWeatherData.alerts) // Keep mock alerts for now
   const [location, setLocation] = useState('Loading...')
+  const [currentLocation, setCurrentLocation] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [weatherTheme, setWeatherTheme] = useState('bg-sunny')
@@ -50,6 +51,7 @@ function App() {
       setHourlyData(forecast.hourly)
       setWeeklyData(forecast.weekly)
       setLocation(current.location)
+      setCurrentLocation(current.location)
       
     } catch (err) {
       setError(err.message)
@@ -74,6 +76,7 @@ function App() {
       setHourlyData(forecast.hourly)
       setWeeklyData(forecast.weekly)
       setLocation(current.location)
+      setCurrentLocation(current.location)
       
     } catch (err) {
       setError(err.message)
@@ -155,6 +158,7 @@ function App() {
           onLocationSearch={handleLocationSearch}
           onCurrentLocation={handleCurrentLocation}
           loading={loading}
+          currentLocation={currentLocation}
         />
 
         {error && (
