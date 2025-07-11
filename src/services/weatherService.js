@@ -7,52 +7,74 @@ export const weatherService = {
   // Get current weather by city name
   async getCurrentWeather(city) {
     try {
+      console.log(`Fetching weather for: ${city}`)
       const response = await axios.get(
         `${BASE_URL}/weather?q=${city}&appid=${API_KEY}&units=metric`
       )
       return this.transformCurrentWeather(response.data)
     } catch (error) {
-      console.error('Error fetching current weather:', error)
-      throw new Error('Failed to fetch current weather data')
+      console.error('Error fetching current weather:', error.response?.data || error.message)
+      
+      if (error.response?.status === 404) {
+        throw new Error(`City "${city}" not found. Please check the spelling or try a different city name.`)
+      } else if (error.response?.status === 401) {
+        throw new Error('Invalid API key. Please check your OpenWeatherMap API key.')
+      } else if (error.response?.status === 429) {
+        throw new Error('API rate limit exceeded. Please try again later.')
+      } else {
+        throw new Error(`Failed to fetch weather data: ${error.response?.data?.message || error.message}`)
+      }
     }
   },
 
   // Get current weather by coordinates
   async getCurrentWeatherByCoords(lat, lon) {
     try {
+      console.log(`Fetching weather for coordinates: ${lat}, ${lon}`)
       const response = await axios.get(
         `${BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
       )
       return this.transformCurrentWeather(response.data)
     } catch (error) {
-      console.error('Error fetching current weather by coords:', error)
-      throw new Error('Failed to fetch current weather data')
+      console.error('Error fetching current weather by coords:', error.response?.data || error.message)
+      throw new Error('Failed to fetch current weather data for your location.')
     }
   },
 
   // Get 5-day forecast
   async getForecast(city) {
     try {
+      console.log(`Fetching forecast for: ${city}`)
       const response = await axios.get(
         `${BASE_URL}/forecast?q=${city}&appid=${API_KEY}&units=metric`
       )
       return this.transformForecast(response.data)
     } catch (error) {
-      console.error('Error fetching forecast:', error)
-      throw new Error('Failed to fetch forecast data')
+      console.error('Error fetching forecast:', error.response?.data || error.message)
+      
+      if (error.response?.status === 404) {
+        throw new Error(`City "${city}" not found. Please check the spelling or try a different city name.`)
+      } else if (error.response?.status === 401) {
+        throw new Error('Invalid API key. Please check your OpenWeatherMap API key.')
+      } else if (error.response?.status === 429) {
+        throw new Error('API rate limit exceeded. Please try again later.')
+      } else {
+        throw new Error(`Failed to fetch forecast data: ${error.response?.data?.message || error.message}`)
+      }
     }
   },
 
   // Get forecast by coordinates
   async getForecastByCoords(lat, lon) {
     try {
+      console.log(`Fetching forecast for coordinates: ${lat}, ${lon}`)
       const response = await axios.get(
         `${BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
       )
       return this.transformForecast(response.data)
     } catch (error) {
-      console.error('Error fetching forecast by coords:', error)
-      throw new Error('Failed to fetch forecast data')
+      console.error('Error fetching forecast by coords:', error.response?.data || error.message)
+      throw new Error('Failed to fetch forecast data for your location.')
     }
   },
 
@@ -185,5 +207,61 @@ export const weatherService = {
     const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
     const index = Math.round(degrees / 22.5) % 16
     return directions[index]
+  },
+
+  // Get alternative city names for common cases
+  getAlternativeCityName(city) {
+    const alternatives = {
+      'Prayagraj': 'Allahabad',
+      'Mumbai': 'Bombay',
+      'Kolkata': 'Calcutta',
+      'Chennai': 'Madras',
+      'Varanasi': 'Benares',
+      'Ahmedabad': 'Ahmadabad'
+    }
+    return alternatives[city] || null
+  },
+
+  // Try to get weather with alternative city name if original fails
+  async getCurrentWeatherWithFallback(city) {
+    try {
+      return await this.getCurrentWeather(city)
+    } catch (error) {
+      if (error.message.includes('not found')) {
+        const alternative = this.getAlternativeCityName(city)
+        if (alternative) {
+          console.log(`Trying alternative name: ${alternative} for ${city}`)
+          try {
+            const result = await this.getCurrentWeather(alternative)
+            // Update the location name to show the working name
+            result.location = result.location.replace(alternative, city)
+            return result
+          } catch (fallbackError) {
+            throw new Error(`City "${city}" not found. Tried alternative name "${alternative}" but it also failed.`)
+          }
+        }
+      }
+      throw error
+    }
+  },
+
+  // Try to get forecast with alternative city name if original fails
+  async getForecastWithFallback(city) {
+    try {
+      return await this.getForecast(city)
+    } catch (error) {
+      if (error.message.includes('not found')) {
+        const alternative = this.getAlternativeCityName(city)
+        if (alternative) {
+          console.log(`Trying alternative name: ${alternative} for ${city}`)
+          try {
+            return await this.getForecast(alternative)
+          } catch (fallbackError) {
+            throw new Error(`City "${city}" not found. Tried alternative name "${alternative}" but it also failed.`)
+          }
+        }
+      }
+      throw error
+    }
   }
 }

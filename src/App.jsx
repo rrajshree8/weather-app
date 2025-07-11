@@ -41,10 +41,10 @@ function App() {
       setLoading(true)
       setError(null)
       
-      // Get current weather and forecast
+      // Get current weather and forecast with fallback
       const [current, forecast] = await Promise.all([
-        weatherService.getCurrentWeather(city),
-        weatherService.getForecast(city)
+        weatherService.getCurrentWeatherWithFallback(city),
+        weatherService.getForecastWithFallback(city)
       ])
       
       setCurrentWeather(current)
